@@ -25,6 +25,7 @@ class _ReaderPageState extends State<ReaderPage> {
   late ScrollController _scrollController;
   bool _isToolbarVisible = true;
   bool _isLoadingChapter = false;
+  final ValueNotifier<double> _progressNotifier = ValueNotifier<double>(0.0);
 
   @override
   void initState() {
@@ -45,11 +46,22 @@ class _ReaderPageState extends State<ReaderPage> {
     _saveProgress();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _progressNotifier.dispose();
     super.dispose();
   }
 
   // Lắng nghe cuộn màn hình để Ẩn/Hiện thanh công cụ
   void _scrollListener() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      if (maxScroll > 0) {
+        _progressNotifier.value = (currentScroll / maxScroll).clamp(0.0, 1.0);
+      } else {
+        _progressNotifier.value = 0.0;
+      }
+    }
+
     if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
       if (_isToolbarVisible) {
         setState(() {
@@ -77,6 +89,7 @@ class _ReaderPageState extends State<ReaderPage> {
           final maxScroll = _scrollController.position.maxScrollExtent;
           final targetOffset = history.progress * maxScroll;
           _scrollController.jumpTo(targetOffset);
+          _progressNotifier.value = history.progress; // Khôi phục thanh tiến trình
         }
       });
     }
@@ -113,6 +126,7 @@ class _ReaderPageState extends State<ReaderPage> {
     setState(() {
       _isLoadingChapter = true;
       _currentChapIndex = newIndex;
+      _progressNotifier.value = 0.0; // Reset thanh tiến trình về 0
     });
 
     // Cuộn lên đầu trang cho chương mới
@@ -438,6 +452,42 @@ class _ReaderPageState extends State<ReaderPage> {
                         : null,
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // 4. Thanh tiến trình đọc siêu mỏng cố định ở trên đầu trang
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _progressNotifier,
+                builder: (context, progress, child) {
+                  return Container(
+                    height: 3, // Chiều cao siêu mỏng sang trọng
+                    width: double.infinity,
+                    color: settings.textColor.withOpacity(0.08), // Nền mờ của thanh progress
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: progress,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppConstants.primaryColor.withOpacity(0.6),
+                                AppConstants.primaryColor,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

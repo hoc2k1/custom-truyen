@@ -15,19 +15,23 @@ class NovelProvider with ChangeNotifier {
   // Load và parse dữ liệu truyện từ local JSON
   Future<void> loadNovels() async {
     if (_novels.isNotEmpty) return; // Chỉ load một lần duy nhất
-    
+
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // Đọc file JSON từ folder assests/data
-      final String response = await rootBundle.loadString('assests/data/output.json');
+      // Đọc file JSON từ folder assets/data
+      final String response = await rootBundle.loadString(
+        'assets/data/output.json',
+      );
       final data = json.decode(response);
-      
+
       if (data != null && data['truyen'] != null) {
         var truyenList = data['truyen'] as List;
-        _novels = truyenList.map((item) => TruyenModel.fromJson(item as Map<String, dynamic>)).toList();
+        _novels = truyenList
+            .map((item) => TruyenModel.fromJson(item as Map<String, dynamic>))
+            .toList();
       } else {
         _errorMessage = 'Dữ liệu không đúng cấu trúc';
       }

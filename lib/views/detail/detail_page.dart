@@ -137,137 +137,16 @@ class _DetailPageState extends State<DetailPage> {
                 ),
               ),
 
-              // 2. Các nút Action (Đọc tiếp / Đọc từ đầu)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: Row(
-                    children: [
-                      // Nút Đọc từ đầu
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppConstants.primaryColor, width: 2),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.play_circle_outline_rounded, color: AppConstants.primaryColor),
-                          label: const Text(
-                            'Đọc Từ Đầu',
-                            style: TextStyle(
-                              color: AppConstants.primaryColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          onPressed: () {
-                            if (widget.novel.chapList.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReaderPage(
-                                    novel: widget.novel,
-                                    initialChapterIndex: 0,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                      // Hiển thị nút "Đọc Tiếp" nếu có lịch sử đọc
-                      if (history != null) ...[
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppConstants.primaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            icon: const Icon(Icons.menu_book_rounded),
-                            label: const Text(
-                              'Đọc Tiếp',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            onPressed: () {
-                              // Tìm index của chương trong danh sách
-                              int savedIndex = widget.novel.chapList.indexWhere(
-                                (c) => c.id == history.chapId,
-                              );
-                              if (savedIndex == -1) savedIndex = 0;
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReaderPage(
-                                    novel: widget.novel,
-                                    initialChapterIndex: savedIndex,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+              // 2. Sticky Header chứa Nút bấm Action và Nút phân trang chương ghim cố định khi cuộn
+              SliverAppBar(
+                pinned: true,
+                primary: false,
+                automaticallyImplyLeading: false,
+                backgroundColor: AppConstants.backgroundDark,
+                titleSpacing: 0,
+                toolbarHeight: totalPages > 1 ? 132.0 : 76.0,
+                title: _buildStickyHeader(context, history, totalChapters, totalPages),
               ),
-
-              // 3. Phân trang Danh sách chương (100 chương 1 trang)
-              if (totalPages > 1)
-                SliverToBoxAdapter(
-                  child: Container(
-                    height: 50,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: totalPages,
-                      itemBuilder: (context, index) {
-                        int startChap = index * _chaptersPerPage + 1;
-                        int endChap = ((index + 1) * _chaptersPerPage).clamp(0, totalChapters);
-                        bool isSelected = _currentPageIndex == index;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _currentPageIndex = index;
-                            });
-                          },
-                          child: Container(
-                            alignment: Alignment.center,
-                            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppConstants.primaryColor : AppConstants.cardDark,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected ? Colors.transparent : Colors.grey[800]!,
-                              ),
-                            ),
-                            child: Text(
-                              '$startChap - $endChap',
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : AppConstants.textSecondaryDark,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
 
               // 4. Danh sách chương của Trang được chọn
               SliverList(
@@ -333,6 +212,154 @@ class _DetailPageState extends State<DetailPage> {
           );
         },
       ),
+    );
+  }
+
+  // Widget xây dựng giao diện ghim (Sticky)
+  Widget _buildStickyHeader(
+    BuildContext context,
+    dynamic history,
+    int totalChapters,
+    int totalPages,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 1. Các nút Action (Đọc từ đầu / Đọc tiếp)
+        Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 8),
+          child: Row(
+            children: [
+              // Nút Đọc từ đầu
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppConstants.primaryColor, width: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: AppConstants.backgroundDark,
+                  ),
+                  icon: const Icon(Icons.play_circle_outline_rounded, color: AppConstants.primaryColor, size: 20),
+                  label: const Text(
+                    'Đọc Từ Đầu',
+                    style: TextStyle(
+                      color: AppConstants.primaryColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (widget.novel.chapList.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReaderPage(
+                            novel: widget.novel,
+                            initialChapterIndex: 0,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+              // Hiển thị nút "Đọc Tiếp" nếu có lịch sử đọc
+              if (history != null) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    icon: const Icon(Icons.menu_book_rounded, size: 20),
+                    label: const Text(
+                      'Đọc Tiếp',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () {
+                      int savedIndex = widget.novel.chapList.indexWhere(
+                        (c) => c.id == history.chapId,
+                      );
+                      if (savedIndex == -1) savedIndex = 0;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReaderPage(
+                            novel: widget.novel,
+                            initialChapterIndex: savedIndex,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // 2. Thanh phân trang (Chỉ hiển thị nếu tổng trang > 1)
+        if (totalPages > 1)
+          Container(
+            height: 48,
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: totalPages,
+              itemBuilder: (context, index) {
+                // Tính toán chỉ số chương thực tế bắt đầu và kết thúc của trang hiện tại
+                int startIndex = index * _chaptersPerPage;
+                int endIndex = ((index + 1) * _chaptersPerPage - 1).clamp(0, totalChapters - 1);
+
+                // Lấy ID chương thực tế của chương đầu tiên và chương cuối cùng trong trang
+                int startChapId = widget.novel.chapList[startIndex].id;
+                int endChapId = widget.novel.chapList[endIndex].id;
+                
+                bool isSelected = _currentPageIndex == index;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _currentPageIndex = index;
+                    });
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppConstants.primaryColor : AppConstants.cardDark,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? Colors.transparent : Colors.grey[850]!,
+                      ),
+                    ),
+                    child: Text(
+                      '$startChapId - $endChapId',
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : AppConstants.textSecondaryDark,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
