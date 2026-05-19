@@ -251,7 +251,9 @@ class _DetailPageState extends State<DetailPage> {
                     ),
                   ),
                   onPressed: () {
-                    if (widget.novel.chapList.isNotEmpty) {
+                    if (widget.novel.chapList.isEmpty) return;
+
+                    void goToReader() {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -261,6 +263,48 @@ class _DetailPageState extends State<DetailPage> {
                           ),
                         ),
                       );
+                    }
+
+                    if (history != null) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AppConstants.cardDark,
+                          title: const Text(
+                            'Đọc lại từ đầu',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          content: const Text(
+                            'Bạn đang đọc dở truyện này. Bắt đầu đọc lại sẽ ghi đè lên tiến trình hiện tại. Bạn có chắc chắn muốn đọc từ đầu không?',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppConstants.primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context); // Đóng popup
+                                goToReader();
+                              },
+                              child: const Text('Đồng Ý'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      goToReader();
                     }
                   },
                 ),
