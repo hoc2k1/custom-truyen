@@ -214,6 +214,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   void _showChapterSelector() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF1E1E1E),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -222,59 +223,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         ),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Danh Sách Chương',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: widget.novel.chapList.length,
-                  itemBuilder: (context, index) {
-                    final chap = widget.novel.chapList[index];
-                    final isCurrent = index == _currentChapIndex;
-
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      title: Text(
-                        chap.ten,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isCurrent
-                              ? AppConstants.primaryColor
-                              : Colors.grey[300],
-                          fontWeight: isCurrent
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      trailing: isCurrent
-                          ? const Icon(
-                              Icons.check_circle_rounded,
-                              color: AppConstants.primaryColor,
-                            )
-                          : null,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _changeChapter(index);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+        return ChapterSelectorSheet(
+          novel: widget.novel,
+          currentChapIndex: _currentChapIndex,
+          onChangeChapter: _changeChapter,
         );
       },
     );
@@ -302,334 +254,462 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
         backgroundColor: settings.backgroundColor,
         body: Stack(
           children: [
-          // 1. Vùng đọc nội dung truyện
-          GestureDetector(
-            onTap: () {
-              // Tap vào giữa màn hình để Ẩn/Hiện thanh công cụ
-              setState(() {
-                _isToolbarVisible = !_isToolbarVisible;
-              });
-            },
-            child: _isLoadingChapter
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: AppConstants.primaryColor,
-                    ),
-                  )
-                : SafeArea(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 24,
-                      ).copyWith(bottom: 150),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Padding để nội dung không bị che bởi Floating Header khi hiện
-                          const SizedBox(height: 56),
-
-                          // Tiêu đề chương lớn trong nội dung đọc
-                          Text(
-                            currentChap.ten,
-                            style: TextStyle(
-                              color: settings.textColor,
-                              fontSize: settings.fontSize + 4,
-                              fontWeight: FontWeight.bold,
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Divider(
-                            color: settings.textColor.withOpacity(0.15),
-                            thickness: 1,
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Nội dung chữ truyện
-                          Text(
-                            currentChap.noiDung,
-                            style: TextStyle(
-                              color: settings.textColor,
-                              fontSize: settings.fontSize,
-                              height: settings.lineHeight,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-
-                          const SizedBox(height: 40),
-                          // Nút chuyển chương ở cuối bài đọc
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[850],
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed: _currentChapIndex > 0
-                                    ? () =>
-                                          _changeChapter(_currentChapIndex - 1)
-                                    : null,
-                                child: const Text('Chương Trước'),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppConstants.primaryColor,
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed:
-                                    _currentChapIndex <
-                                        widget.novel.chapList.length - 1
-                                    ? () =>
-                                          _changeChapter(_currentChapIndex + 1)
-                                    : null,
-                                child: const Text('Chương Sau'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                            height: 80,
-                          ), // Chừa không gian tránh Footer che
-                        ],
+            // 1. Vùng đọc nội dung truyện
+            GestureDetector(
+              onTap: () {
+                // Tap vào giữa màn hình để Ẩn/Hiện thanh công cụ
+                setState(() {
+                  _isToolbarVisible = !_isToolbarVisible;
+                });
+              },
+              child: _isLoadingChapter
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppConstants.primaryColor,
                       ),
-                    ),
-                  ),
-          ),
+                    )
+                  : SafeArea(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 24,
+                        ).copyWith(bottom: 300),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Padding để nội dung không bị che bởi Floating Header khi hiện
+                            const SizedBox(height: 56),
 
-          // 2. Floating Header (Slide từ trên xuống)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            top: _isToolbarVisible
-                ? 0
-                : -130, // Ẩn hoàn toàn lên trên khi false
-            left: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppConstants.cardDark.withOpacity(0.95),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Thanh điều hướng AppBar chính
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            _saveProgress();
-                            Navigator.pop(context);
-                          },
-                        ),
-                        Expanded(
-                          child: Text(
-                            currentChap.ten,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.settings_rounded,
-                            color: AppConstants.primaryColor,
-                          ),
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => const ReaderSettingsSheet(),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    // Thanh Breadcrumb cao cấp
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              _saveProgress();
-                              Navigator.popUntil(
-                                context,
-                                (route) => route.isFirst,
-                              );
-                            },
-                            child: const Text(
-                              'Trang chủ',
+                            // Tiêu đề chương lớn trong nội dung đọc
+                            Text(
+                              currentChap.ten,
                               style: TextStyle(
-                                color: AppConstants.accentColor,
-                                fontSize: 12,
+                                color: settings.textColor,
+                                fontSize: settings.fontSize + 4,
+                                fontWeight: FontWeight.bold,
+                                height: 1.4,
                               ),
                             ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.grey,
-                            size: 14,
-                          ),
-                          GestureDetector(
-                            onTap: () {
+                            const SizedBox(height: 8),
+                            Divider(
+                              color: settings.textColor.withOpacity(0.15),
+                              thickness: 1,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Nội dung chữ truyện
+                            Text(
+                              currentChap.noiDung,
+                              style: TextStyle(
+                                color: settings.textColor,
+                                fontSize: settings.fontSize,
+                                height: settings.lineHeight,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+
+                            const SizedBox(height: 40),
+                            // Nút chuyển chương ở cuối bài đọc
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey[850],
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: _currentChapIndex > 0
+                                      ? () => _changeChapter(
+                                          _currentChapIndex - 1,
+                                        )
+                                      : null,
+                                  child: const Text('Chương Trước'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppConstants.primaryColor,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed:
+                                      _currentChapIndex <
+                                          widget.novel.chapList.length - 1
+                                      ? () => _changeChapter(
+                                          _currentChapIndex + 1,
+                                        )
+                                      : null,
+                                  child: const Text('Chương Sau'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 80,
+                            ), // Chừa không gian tránh Footer che
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+
+            // 2. Floating Header (Slide từ trên xuống)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              top: _isToolbarVisible
+                  ? 0
+                  : -130, // Ẩn hoàn toàn lên trên khi false
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppConstants.cardDark.withOpacity(0.95),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Thanh điều hướng AppBar chính
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
                               _saveProgress();
                               Navigator.pop(context);
                             },
-                            child: Text(
-                              widget.novel.ten,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppConstants.accentColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.grey,
-                            size: 14,
                           ),
                           Expanded(
                             child: Text(
-                              'Chương ${currentChap.id}',
+                              currentChap.ten,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.settings_rounded,
+                              color: AppConstants.primaryColor,
+                            ),
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) =>
+                                    const ReaderSettingsSheet(),
+                              );
+                            },
+                          ),
                         ],
                       ),
+                      // Thanh Breadcrumb cao cấp
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          bottom: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                _saveProgress();
+                                Navigator.popUntil(
+                                  context,
+                                  (route) => route.isFirst,
+                                );
+                              },
+                              child: const Text(
+                                'Trang chủ',
+                                style: TextStyle(
+                                  color: AppConstants.accentColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.grey,
+                              size: 14,
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                _saveProgress();
+                                Navigator.pop(context);
+                              },
+                              child: Text(
+                                widget.novel.ten,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppConstants.accentColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.grey,
+                              size: 14,
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Chương ${currentChap.id}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. Floating Footer (Slide từ dưới lên)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              bottom: _isToolbarVisible
+                  ? 0
+                  : -100, // Ẩn hoàn toàn xuống dưới khi false
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppConstants.cardDark.withOpacity(0.95),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.only(top: 8, bottom: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // Nút chương trước
+                    IconButton(
+                      icon: const Icon(
+                        Icons.navigate_before_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                      onPressed: _currentChapIndex > 0
+                          ? () => _changeChapter(_currentChapIndex - 1)
+                          : null,
+                    ),
+                    // Nút mở danh sách chương
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[850],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.format_list_bulleted_rounded,
+                        size: 18,
+                      ),
+                      label: const Text('Mục Lục'),
+                      onPressed: _showChapterSelector,
+                    ),
+                    // Nút chương sau
+                    IconButton(
+                      icon: const Icon(
+                        Icons.navigate_next_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                      onPressed:
+                          _currentChapIndex < widget.novel.chapList.length - 1
+                          ? () => _changeChapter(_currentChapIndex + 1)
+                          : null,
                     ),
                   ],
                 ),
               ),
             ),
-          ),
 
-          // 3. Floating Footer (Slide từ dưới lên)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            bottom: _isToolbarVisible
-                ? 0
-                : -100, // Ẩn hoàn toàn xuống dưới khi false
-            left: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppConstants.cardDark.withOpacity(0.95),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
+            // 4. Thanh tiến trình đọc siêu mỏng cố định ở trên đầu trang
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _progressNotifier,
+                  builder: (context, progress, child) {
+                    return Container(
+                      height: 3, // Chiều cao siêu mỏng sang trọng
+                      width: double.infinity,
+                      color: settings.textColor.withOpacity(
+                        0.08,
+                      ), // Nền mờ của thanh progress
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppConstants.textSecondaryDark.withOpacity(
+                                0.6,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-              padding: const EdgeInsets.only(top: 8, bottom: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  // Nút chương trước
-                  IconButton(
-                    icon: const Icon(
-                      Icons.navigate_before_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                    onPressed: _currentChapIndex > 0
-                        ? () => _changeChapter(_currentChapIndex - 1)
-                        : null,
-                  ),
-                  // Nút mở danh sách chương
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[850],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                    ),
-                    icon: const Icon(
-                      Icons.format_list_bulleted_rounded,
-                      size: 18,
-                    ),
-                    label: const Text('Mục Lục'),
-                    onPressed: _showChapterSelector,
-                  ),
-                  // Nút chương sau
-                  IconButton(
-                    icon: const Icon(
-                      Icons.navigate_next_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                    onPressed:
-                        _currentChapIndex < widget.novel.chapList.length - 1
-                        ? () => _changeChapter(_currentChapIndex + 1)
-                        : null,
-                  ),
-                ],
+            ),
+          ],
+        ), // Đóng Stack
+      ), // Đóng Scaffold
+    ); // Đóng PopScope
+  }
+}
+
+class ChapterSelectorSheet extends StatefulWidget {
+  final TruyenModel novel;
+  final int currentChapIndex;
+  final Function(int) onChangeChapter;
+
+  const ChapterSelectorSheet({
+    super.key,
+    required this.novel,
+    required this.currentChapIndex,
+    required this.onChangeChapter,
+  });
+
+  @override
+  State<ChapterSelectorSheet> createState() => _ChapterSelectorSheetState();
+}
+
+class _ChapterSelectorSheetState extends State<ChapterSelectorSheet> {
+  late int _currentPageIndex;
+  final int _chaptersPerPage = 100;
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPageIndex = widget.currentChapIndex ~/ _chaptersPerPage;
+    
+    // Ước lượng chiều cao mỗi item (ListTile mặc định khoảng 56.0).
+    int indexInPage = widget.currentChapIndex % _chaptersPerPage;
+    double initialOffset = indexInPage * 56.0; 
+    
+    _scrollController = ScrollController(initialScrollOffset: initialOffset);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalChapters = widget.novel.chapList.length;
+    final int totalPages = (totalChapters / _chaptersPerPage).ceil();
+
+    return Container(
+      padding: const EdgeInsets.only(left: 16, right: 8, top: 20, bottom: 20),
+      height: MediaQuery.of(context).size.height * 0.7,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(right: 8.0),
+            child: Text(
+              'Danh Sách Chương',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          // Phân trang giống trang chi tiết
+          if (totalPages > 1)
+            Container(
+              height: 40,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: totalPages,
+                itemBuilder: (context, index) {
+                  int startIndex = index * _chaptersPerPage;
+                  int endIndex = ((index + 1) * _chaptersPerPage - 1)
+                      .clamp(0, totalChapters - 1);
+                  int startChapId = widget.novel.chapList[startIndex].id;
+                  int endChapId = widget.novel.chapList[endIndex].id;
+                  bool isSelected = _currentPageIndex == index;
 
-          // 4. Thanh tiến trình đọc siêu mỏng cố định ở trên đầu trang
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: ValueListenableBuilder<double>(
-                valueListenable: _progressNotifier,
-                builder: (context, progress, child) {
-                  return Container(
-                    height: 3, // Chiều cao siêu mỏng sang trọng
-                    width: double.infinity,
-                    color: settings.textColor.withOpacity(
-                      0.08,
-                    ), // Nền mờ của thanh progress
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: progress,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppConstants.textSecondaryDark.withOpacity(
-                              0.6,
-                            ),
-                          ),
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _currentPageIndex = index;
+                        // Khi đổi trang thì cuộn lên đầu danh sách chương
+                        _scrollController.jumpTo(0);
+                      });
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppConstants.primaryColor
+                            : AppConstants.cardDark,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.transparent
+                              : Colors.grey[850]!,
+                        ),
+                      ),
+                      child: Text(
+                        '$startChapId - $endChapId',
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppConstants.textSecondaryDark,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -637,10 +717,57 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                 },
               ),
             ),
+          Expanded(
+            child: RawScrollbar(
+              controller: _scrollController,
+              thumbVisibility: true,
+              thumbColor: AppConstants.primaryColor.withOpacity(0.5),
+              thickness: 4,
+              radius: const Radius.circular(10),
+              crossAxisMargin: 2,
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: _chaptersPerPage,
+                itemBuilder: (context, index) {
+                  final int actualIndex =
+                      _currentPageIndex * _chaptersPerPage + index;
+                  if (actualIndex >= totalChapters) return null;
+
+                  final chap = widget.novel.chapList[actualIndex];
+                  final isCurrent = actualIndex == widget.currentChapIndex;
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    title: Text(
+                      chap.ten,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isCurrent
+                            ? AppConstants.primaryColor
+                            : Colors.grey[300],
+                        fontWeight: isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: isCurrent
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppConstants.primaryColor,
+                          )
+                        : null,
+                    onTap: () {
+                      Navigator.pop(context);
+                      widget.onChangeChapter(actualIndex);
+                    },
+                  );
+                },
+              ),
+            ),
           ),
         ],
-      ), // Đóng Stack
-    ), // Đóng Scaffold
-    ); // Đóng PopScope
+      ),
+    );
   }
 }

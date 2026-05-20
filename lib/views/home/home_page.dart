@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/novel_provider.dart';
@@ -13,6 +14,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -20,6 +23,42 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NovelProvider>().loadNovels();
     });
+  }
+
+  Future<void> _handleUpload() async {
+    FilePickerResult? result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đang xử lý file...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+        
+        await context.read<NovelProvider>().importCustomData(result.files.single.path!);
+        
+        if (context.mounted) {
+          final error = context.read<NovelProvider>().errorMessage;
+          if (error.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(error), backgroundColor: Colors.red),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Tải file thành công!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      }
+    }
   }
 
   @override
@@ -53,8 +92,34 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Consumer2<NovelProvider, ReaderProvider>(
-        builder: (context, novelProv, readerProv, child) {
+      body: _selectedIndex == 0 ? _buildHomeTab() : _buildUploadTab(),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: AppConstants.cardDark,
+        selectedItemColor: AppConstants.primaryColor,
+        unselectedItemColor: AppConstants.textSecondaryDark,
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Trang chủ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.upload_file_rounded),
+            label: 'Upload',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeTab() {
+    return Consumer2<NovelProvider, ReaderProvider>(
+      builder: (context, novelProv, readerProv, child) {
           if (novelProv.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
@@ -219,6 +284,38 @@ class _HomePageState extends State<HomePage> {
             },
           );
         },
+      );
+  }
+
+  Widget _buildUploadTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.cloud_upload_rounded, size: 80, color: AppConstants.primaryColor),
+          const SizedBox(height: 20),
+          const Text(
+            'Tải lên file dữ liệu JSON của bạn',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.upload_file_rounded),
+            label: const Text(
+              'Chọn File JSON',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            onPressed: _handleUpload,
+          ),
+        ],
       ),
     );
   }

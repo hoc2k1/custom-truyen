@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/truyen_model.dart';
 
 class NovelProvider with ChangeNotifier {
@@ -13,18 +15,27 @@ class NovelProvider with ChangeNotifier {
   String get errorMessage => _errorMessage;
 
   // Load và parse dữ liệu truyện từ local JSON
-  Future<void> loadNovels() async {
-    if (_novels.isNotEmpty) return; // Chỉ load một lần duy nhất
+  Future<void> loadNovels({bool forceReload = false}) async {
+    if (_novels.isNotEmpty && !forceReload) return; // Chỉ load một lần duy nhất
 
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // Đọc file JSON từ folder assets/data
-      final String response = await rootBundle.loadString(
-        'assets/data/output.json',
-      );
+      String response;
+      
+      // Kiểm tra file custom_data.json trong Document Directory
+      final directory = await getApplicationDocumentsDirectory();
+      final customFile = File('${directory.path}/custom_data.json');
+      
+      if (await customFile.exists()) {
+        response = await customFile.readAsString();
+      } else {
+        // Đọc file JSON từ folder assets/data
+        response = await rootBundle.loadString('assets/data/output.json');
+      }
+
       final data = json.decode(response);
 
       if (data != null && data['truyen'] != null) {
@@ -42,6 +53,26 @@ class NovelProvider with ChangeNotifier {
       _errorMessage = 'Không thể tải dữ liệu truyện: $e';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Import file JSON mới
+  Future<void> importCustomData(String filePath) async {
+    try {
+      final sourceFile = File(filePath);
+      if (!await sourceFile.exists()) return;
+
+      final directory = await getApplicationDocumentsDirectory();
+      final targetFile = File('${directory.path}/custom_data.json');
+      
+      // Copy nội dung file được chọn vào file lưu trữ
+      await sourceFile.copy(targetFile.path);
+      
+      // Load lại dữ liệu
+      await loadNovels(forceReload: true);
+    } catch (e) {
+      _errorMessage = 'Lỗi khi import file: $e';
       notifyListeners();
     }
   }
