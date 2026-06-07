@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../models/truyen_model.dart';
 import '../../providers/reader_provider.dart';
 import '../../utils/constants.dart';
@@ -262,93 +263,91 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                   _isToolbarVisible = !_isToolbarVisible;
                 });
               },
-              child: _isLoadingChapter
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppConstants.primaryColor,
-                      ),
-                    )
-                  : SafeArea(
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 24,
-                        ).copyWith(bottom: 300),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Padding để nội dung không bị che bởi Floating Header khi hiện
-                            const SizedBox(height: 56),
+              child: _isLoadingChapter ? const Center(
+                child: CircularProgressIndicator(
+                  color: AppConstants.primaryColor,
+                ),
+              ) : SafeArea(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ).copyWith(bottom: 300),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Padding để nội dung không bị che bởi Floating Header khi hiện
+                      const SizedBox(height: 56),
 
-                            // Tiêu đề chương lớn trong nội dung đọc
-                            Text(
-                              currentChap.ten,
-                              style: TextStyle(
-                                color: settings.textColor,
-                                fontSize: settings.fontSize + 4,
-                                fontWeight: FontWeight.bold,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Divider(
-                              color: settings.textColor.withOpacity(0.15),
-                              thickness: 1,
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Nội dung chữ truyện
-                            Text(
-                              currentChap.noiDung,
-                              style: TextStyle(
-                                color: settings.textColor,
-                                fontSize: settings.fontSize,
-                                height: settings.lineHeight,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-
-                            const SizedBox(height: 40),
-                            // Nút chuyển chương ở cuối bài đọc
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.grey[850],
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed: _currentChapIndex > 0
-                                      ? () => _changeChapter(
-                                          _currentChapIndex - 1,
-                                        )
-                                      : null,
-                                  child: const Text('Chương Trước'),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppConstants.primaryColor,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed:
-                                      _currentChapIndex <
-                                          widget.novel.chapList.length - 1
-                                      ? () => _changeChapter(
-                                          _currentChapIndex + 1,
-                                        )
-                                      : null,
-                                  child: const Text('Chương Sau'),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(
-                              height: 80,
-                            ), // Chừa không gian tránh Footer che
-                          ],
+                      // Tiêu đề chương lớn trong nội dung đọc
+                      Text(
+                        currentChap.ten,
+                        style: TextStyle(
+                          color: settings.textColor,
+                          fontSize: settings.fontSize + 4,
+                          fontWeight: FontWeight.bold,
+                          height: 1.4,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Divider(
+                        color: settings.textColor.withOpacity(0.15),
+                        thickness: 1,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Nội dung chữ truyện
+                      Text(
+                        currentChap.noiDung,
+                        style: TextStyle(
+                          color: settings.textColor,
+                          fontSize: settings.fontSize,
+                          height: settings.lineHeight,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+                      // Nút chuyển chương ở cuối bài đọc
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[850],
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: _currentChapIndex > 0
+                              ? () => _changeChapter(
+                                  _currentChapIndex - 1,
+                                )
+                              : null,
+                            child: const Text('Chương Trước'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppConstants.primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed:
+                              _currentChapIndex <
+                                widget.novel.chapList.length - 1
+                              ? () => _changeChapter(
+                                  _currentChapIndex + 1,
+                                )
+                              : null,
+                            child: const Text('Chương Sau'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 80,
+                      ), // Chừa không gian tránh Footer che
+                    ],
+                  ),
+                ),
+              ),
             ),
 
             // 2. Floating Header (Slide từ trên xuống)
@@ -519,8 +518,8 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                         size: 32,
                       ),
                       onPressed: _currentChapIndex > 0
-                          ? () => _changeChapter(_currentChapIndex - 1)
-                          : null,
+                        ? () => _changeChapter(_currentChapIndex - 1)
+                        : null,
                     ),
                     // Nút mở danh sách chương
                     ElevatedButton.icon(
@@ -550,9 +549,9 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                         size: 32,
                       ),
                       onPressed:
-                          _currentChapIndex < widget.novel.chapList.length - 1
-                          ? () => _changeChapter(_currentChapIndex + 1)
-                          : null,
+                        _currentChapIndex < widget.novel.chapList.length - 1
+                        ? () => _changeChapter(_currentChapIndex + 1)
+                        : null,
                     ),
                   ],
                 ),
@@ -619,23 +618,37 @@ class ChapterSelectorSheet extends StatefulWidget {
 class _ChapterSelectorSheetState extends State<ChapterSelectorSheet> {
   late int _currentPageIndex;
   final int _chaptersPerPage = 100;
-  late ScrollController _scrollController;
+
+  // Controllers from scrollable_positioned_list
+  late ItemScrollController _itemScrollController;
+  late ItemPositionsListener _itemPositionsListener;
 
   @override
   void initState() {
     super.initState();
     _currentPageIndex = widget.currentChapIndex ~/ _chaptersPerPage;
-    
-    // Ước lượng chiều cao mỗi item (ListTile mặc định khoảng 56.0).
-    int indexInPage = widget.currentChapIndex % _chaptersPerPage;
-    double initialOffset = indexInPage * 56.0; 
-    
-    _scrollController = ScrollController(initialScrollOffset: initialOffset);
+
+    _itemScrollController = ItemScrollController();
+    _itemPositionsListener = ItemPositionsListener.create();
+
+    // After first frame, jump to the index within the current page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final int indexInPage = widget.currentChapIndex % _chaptersPerPage;
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.jumpTo(index: indexInPage);
+      } else {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (_itemScrollController.isAttached) {
+            _itemScrollController.jumpTo(index: indexInPage);
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    // ItemScrollController / ItemPositionsListener do not require dispose
     super.dispose();
   }
 
@@ -682,9 +695,11 @@ class _ChapterSelectorSheetState extends State<ChapterSelectorSheet> {
                     onTap: () {
                       setState(() {
                         _currentPageIndex = index;
-                        // Khi đổi trang thì cuộn lên đầu danh sách chương
-                        _scrollController.jumpTo(0);
                       });
+                      // Khi đổi trang thì cuộn lên đầu danh sách chương (index 0)
+                      if (_itemScrollController.isAttached) {
+                        _itemScrollController.jumpTo(index: 0);
+                      }
                     },
                     child: Container(
                       alignment: Alignment.center,
@@ -718,52 +733,40 @@ class _ChapterSelectorSheetState extends State<ChapterSelectorSheet> {
               ),
             ),
           Expanded(
-            child: RawScrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              thumbColor: AppConstants.primaryColor.withOpacity(0.5),
-              thickness: 4,
-              radius: const Radius.circular(10),
-              crossAxisMargin: 2,
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: _chaptersPerPage,
-                itemBuilder: (context, index) {
-                  final int actualIndex =
-                      _currentPageIndex * _chaptersPerPage + index;
-                  if (actualIndex >= totalChapters) return null;
+            child: ScrollablePositionedList.builder(
+              itemCount: _chaptersPerPage,
+              itemScrollController: _itemScrollController,
+              itemPositionsListener: _itemPositionsListener,
+              itemBuilder: (context, index) {
+                final int actualIndex = _currentPageIndex * _chaptersPerPage + index;
+                if (actualIndex >= totalChapters) return const SizedBox.shrink();
 
-                  final chap = widget.novel.chapList[actualIndex];
-                  final isCurrent = actualIndex == widget.currentChapIndex;
+                final chap = widget.novel.chapList[actualIndex];
+                final isCurrent = actualIndex == widget.currentChapIndex;
 
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    title: Text(
-                      chap.ten,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isCurrent
-                            ? AppConstants.primaryColor
-                            : Colors.grey[300],
-                        fontWeight: isCurrent
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  title: Text(
+                    chap.ten,
+                    maxLines: 10,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isCurrent ? AppConstants.primaryColor : Colors.grey[300],
+                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                     ),
-                    trailing: isCurrent
-                        ? const Icon(
-                            Icons.check_circle_rounded,
-                            color: AppConstants.primaryColor,
-                          )
-                        : null,
-                    onTap: () {
-                      Navigator.pop(context);
-                      widget.onChangeChapter(actualIndex);
-                    },
-                  );
-                },
-              ),
+                  ),
+                  trailing: isCurrent
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppConstants.primaryColor,
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onChangeChapter(actualIndex);
+                  },
+                );
+              },
             ),
           ),
         ],

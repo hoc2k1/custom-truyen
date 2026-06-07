@@ -5,6 +5,7 @@ import '../../models/truyen_model.dart';
 import '../../providers/reader_provider.dart';
 import '../../utils/constants.dart';
 import '../reader/reader_page.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class DetailPage extends StatefulWidget {
   final TruyenModel novel;
@@ -16,8 +17,21 @@ class DetailPage extends StatefulWidget {
 }
 
 class _DetailPageState extends State<DetailPage> {
-  int _currentPageIndex = 0; // Trang hiện tại trong danh sách phân trang (0 = chương 1-100)
+  int _currentPageIndex = 0;
   final int _chaptersPerPage = 100;
+
+  late ItemScrollController _itemScrollController;
+  late ItemPositionsListener _itemPositionsListener;
+
+  bool _historyHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _itemScrollController = ItemScrollController();
+    _itemPositionsListener = ItemPositionsListener.create();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +40,37 @@ class _DetailPageState extends State<DetailPage> {
       body: Consumer<ReaderProvider>(
         builder: (context, readerProv, child) {
           final history = readerProv.getHistory(widget.novel.id);
+          if (
+              !_historyHandled &&
+              readerProv.isInitialized &&
+              history != null
+          ) {
+            _historyHandled = true;
+
+            final savedIndex = widget.novel.chapList.indexWhere(
+              (c) => c.id == history.chapId,
+            );
+
+            if (savedIndex != -1) {
+              _currentPageIndex = savedIndex ~/ _chaptersPerPage;
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Future.delayed(
+                  const Duration(milliseconds: 200),
+                  () {
+                    final indexInPage =
+                        savedIndex % _chaptersPerPage;
+
+                    if (_itemScrollController.isAttached) {
+                      _itemScrollController.jumpTo(
+                        index: indexInPage,
+                      );
+                    }
+                  },
+                );
+              });
+            }
+          }
           final totalChapters = widget.novel.chapList.length;
           final totalChaptersId = widget.novel.totalChapters;
           
@@ -149,12 +194,17 @@ class _DetailPageState extends State<DetailPage> {
               ),
 
               // 4. Danh sách chương của Trang được chọn
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
+              SliverFillRemaining(
+                child: ScrollablePositionedList.builder(
+                  itemScrollController: _itemScrollController,
+                  itemPositionsListener: _itemPositionsListener,
+                  itemCount: _chaptersPerPage,
+                  itemBuilder: (context, index) {
                     // Tính toán chỉ số chương thực tế
                     final int actualIndex = _currentPageIndex * _chaptersPerPage + index;
-                    if (actualIndex >= totalChapters) return null;
+                    if (actualIndex >= totalChapters) {
+                      return const SizedBox.shrink();
+                    }
 
                     final chap = widget.novel.chapList[actualIndex];
                     
@@ -173,7 +223,7 @@ class _DetailPageState extends State<DetailPage> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         title: Text(
                           chap.ten,
-                          maxLines: 1,
+                          maxLines: 10,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: isReading ? AppConstants.primaryColor : AppConstants.textPrimaryDark,
@@ -200,7 +250,6 @@ class _DetailPageState extends State<DetailPage> {
                       ),
                     );
                   },
-                  childCount: _chaptersPerPage,
                 ),
               ),
               
@@ -379,6 +428,12 @@ class _DetailPageState extends State<DetailPage> {
                     setState(() {
                       _currentPageIndex = index;
                     });
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_itemScrollController.isAttached) {
+                        _itemScrollController.jumpTo(index: 0);
+                      }
+                    });
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -394,6 +449,7 @@ class _DetailPageState extends State<DetailPage> {
                     child: Text(
                       '$startChapId - $endChapId',
                       style: TextStyle(
+                        fontSize: 15,
                         color: isSelected ? Colors.white : AppConstants.textSecondaryDark,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
